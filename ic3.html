@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện thi IC3 Spark</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        
+        .btn-green {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .btn-green:hover {
+            background-color: #059669;
+        }
+
+        .btn-red {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-red:hover {
+            background-color: #dc2626;
+        }
+
+        .question-option, .drag-option-source, .drop-zone-target {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .true-false-statement-row td {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .question-option:hover, .drag-option-source:hover {
+            background-color: #f3f4f6;
+            border-color: #3b82f6;
+        }
+
+        .question-option.selected {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+            font-weight: 500;
+        }
+        
+        .question-option.correct, .drop-zone-target.correct, .true-false-statement-row .correct-cell {
+            background-color: #d1fae5 !important; 
+            border-color: #10b981 !important;
+        }
+
+        .question-option.incorrect, .drop-zone-target.incorrect, .true-false-statement-row .incorrect-cell {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+        }
+        
+        .drag-option-source {
+            background-color: #e0e7ff; 
+            cursor: grab;
+        }
+        .drag-option-source.dragging {
+            opacity: 0.5;
+        }
+
+        .drop-zone-target {
+            background-color: #f9fafb; 
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-style: dashed;
+        }
+        .drop-zone-target.over {
+            background-color: #eef2ff; 
+            border-color: #6366f1;
+        }
+        .drop-zone-target.dropped {
+            background-color: #dbeafe;
+            border-style: solid;
+        }
+
+        @media (max-width: 768px) {
+            .container { margin: 10px; padding: 15px; }
+            .btn { width: 100%; margin-bottom: 10px; }
+            .flex-col-reverse.md\:flex-row { flex-direction: column-reverse; }
+            .md\:w-1\/3, .md\:w-2\/3 { width: 100%; }
+        }
+
+        .question-navigator::-webkit-scrollbar { width: 8px; }
+        .question-navigator::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .question-navigator::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .question-navigator::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        #timer { font-size: 1.5em; font-weight: bold; color: #3b82f6; }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    </style>
+</head>
+
+<body class="text-gray-800">
+    <div id="app" class="container">
+        <div id="roleSelectionView">
+            <h1 class="text-3xl font-bold mb-6 text-center text-blue-600">Chào mừng đến với Luyện thi IC3 Spark</h1>
+            <p class="text-center mb-8 text-lg">Vui lòng chọn vai trò của bạn:</p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button onclick="selectRole('student')" class="btn btn-primary text-lg px-8 py-3">Học sinh</button>
+                <button onclick="selectRole('admin')" class="btn btn-green text-lg px-8 py-3">Người quản trị (Giáo viên)</button>
+            </div>
+        </div>
+
+        <div id="adminView" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-green-600">Quản lý Câu hỏi</h2>
+                <button onclick="showRoleSelection()" class="btn btn-secondary">Quay lại</button>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h3 class="text-xl font-medium mb-4 text-green-700">Thêm Câu hỏi Mới (Thủ công)</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="questionModuleAdmin" class="block text-sm font-medium text-gray-700 mb-1">Chủ đề (Module):</label>
+                        <select id="questionModuleAdmin" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="Computing Fundamentals">Các khái niệm cơ bản về Máy tính</option>
+                            <option value="Key Applications">Các ứng dụng chính</option>
+                            <option value="Living Online">Cuộc sống trực tuyến</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="questionTypeAdmin" class="block text-sm font-medium text-gray-700 mb-1">Loại câu hỏi:</label>
+                        <select id="questionTypeAdmin" onchange="toggleQuestionTypeFields()" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="multiple-choice-single">Trắc nghiệm (Chọn 1)</option>
+                            <option value="multiple-choice-multiple">Trắc nghiệm (Chọn nhiều)</option>
+                            <option value="true-false">Đúng/Sai (Đơn)</option>
+                            <option value="true-false-table">Đúng/Sai (Bảng)</option>
+                            <option value="drag-drop-match">Kéo thả (Ghép nối)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="questionTextAdmin" class="block text-sm font-medium text-gray-700 mb-1">Nội dung câu hỏi/Yêu cầu chung:</label>
+                        <textarea id="questionTextAdmin" rows="2" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Nhập nội dung câu hỏi hoặc yêu cầu chung cho bảng..."></textarea>
+                    </div>
+
+                    <div id="mcFieldsAdmin">
+                        <div id="optionsContainerAdmin"></div>
+                        <button onclick="addOptionFieldAdmin()" class="btn btn-secondary text-sm py-1 px-3 mt-2">Thêm lựa chọn</button>
+                        <div>
+                            <label for="correctAnswerAdminMC" class="block text-sm font-medium text-gray-700 mb-1 mt-2">Đáp án đúng (số thứ tự, bắt đầu từ 1. Nếu nhiều, cách nhau bằng dấu phẩy, vd: 1,3):</label>
+                            <input type="text" id="correctAnswerAdminMC" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: 1 hoặc 1,3">
+                        </div>
+                    </div>
+
+                    <div id="tfFieldsAdmin" class="hidden">
+                        <label for="correctAnswerAdminTF" class="block text-sm font-medium text-gray-700 mb-1">Đáp án đúng (cho Đúng/Sai Đơn):</label>
+                        <select id="correctAnswerAdminTF" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="0">Đúng</option>
+                            <option value="1">Sai</option>
+                        </select>
+                    </div>
+                    
+                    <div id="tfTableFieldsAdmin" class="hidden space-y-2">
+                         <label class="block text-sm font-medium text-gray-700">Các câu khẳng định (cho Đúng/Sai Bảng):</label>
+                        <textarea id="statementsAdminTFTable" rows="4" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Khẳng định 1&#10;Khẳng định 2&#10;Khẳng định 3"></textarea>
+                        <label for="correctAnswersAdminTFTable" class="block text-sm font-medium text-gray-700">Đáp án đúng cho bảng (0 cho Đúng, 1 cho Sai, cách nhau bằng dấu phẩy, theo thứ tự khẳng định):</label>
+                        <input type="text" id="correctAnswersAdminTFTable" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Ví dụ: 0,1,0">
+                    </div>
+
+
+                    <div id="ddMatchFieldsAdmin" class="hidden">
+                        <p class="text-sm text-gray-600 mb-2">Nhập các mục kéo và các mục tiêu thả tương ứng. Các mục được phân tách bằng dấu xuống dòng (Enter).</p>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Các mục kéo (mỗi mục một dòng):</label><textarea id="draggableItemsAdmin" rows="3" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Item A&#10;Item B"></textarea></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Các mục tiêu thả (theo đúng thứ tự ghép với mục kéo, mỗi mục một dòng):</label><textarea id="dropZoneTargetsAdmin" rows="3" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Target for A&#10;Target for B"></textarea></div>
+                    </div>
+                    
+                    <div>
+                        <label for="explanationTextAdmin" class="block text-sm font-medium text-gray-700 mb-1 mt-3">Giải thích (cho Training Mode):</label>
+                        <textarea id="explanationTextAdmin" rows="2" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="Nhập giải thích chi tiết..."></textarea>
+                    </div>
+                </div>
+                <button onclick="saveQuestion()" class="btn btn-green mt-6 w-full">Lưu Câu hỏi (Thủ công)</button>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h3 class="text-xl font-medium mb-4 text-green-700">Tải lên Câu hỏi từ File</h3>
+                <div class="space-y-3">
+                    <div><label for="fileUploadAdmin" class="block text-sm font-medium text-gray-700 mb-1">Chọn file Excel (.xlsx):</label><input type="file" id="fileUploadAdmin" accept=".xlsx" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/></div>
+                    <button onclick="handleFileUpload()" class="btn btn-primary w-full">Xử lý File và Thêm Câu hỏi</button>
+                </div>
+                <div class="mt-4 space-y-2">
+                    <p class="text-sm text-gray-600">Tải về file mẫu để chuẩn bị câu hỏi:</p>
+                    <button onclick="downloadExcelTemplate()" class="text-sm text-blue-600 hover:text-blue-800 underline">Tải file Excel mẫu (template_questions.xlsx)</button><br>
+                    <a href="javascript:void(0)" onclick="showWordTemplateGuidance()" class="text-sm text-blue-600 hover:text-blue-800 underline">Xem hướng dẫn cấu trúc file Word (khuyến khích dùng Excel)</a>
+                </div>
+                 <div id="uploadStatusAdmin" class="mt-3 text-sm"></div>
+            </div>
+
+            <h3 class="text-xl font-medium mb-4 text-green-700">Danh sách câu hỏi hiện có</h3>
+            <div id="questionListAdmin" class="space-y-3 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-md"></div>
+        </div>
+
+        <div id="studentView" class="hidden">
+            <div id="testSelectionView">
+                <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-semibold text-blue-600">Chọn Bài Thi IC3 Spark</h2><button onclick="showRoleSelection()" class="btn btn-secondary">Quay lại</button></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button onclick="startTest('Computing Fundamentals', 'Training')" class="btn bg-yellow-500 hover:bg-yellow-600 text-white p-6 text-lg">Luyện tập: Các khái niệm cơ bản</button>
+                    <button onclick="startTest('Computing Fundamentals', 'Testing')" class="btn btn-primary p-6 text-lg">Thi thử: Các khái niệm cơ bản</button>
+                    <button onclick="startTest('Key Applications', 'Training')" class="btn bg-yellow-500 hover:bg-yellow-600 text-white p-6 text-lg">Luyện tập: Các ứng dụng chính</button>
+                    <button onclick="startTest('Key Applications', 'Testing')" class="btn btn-primary p-6 text-lg">Thi thử: Các ứng dụng chính</button>
+                    <button onclick="startTest('Living Online', 'Training')" class="btn bg-yellow-500 hover:bg-yellow-600 text-white p-6 text-lg">Luyện tập: Cuộc sống trực tuyến</button>
+                    <button onclick="startTest('Living Online', 'Testing')" class="btn btn-primary p-6 text-lg">Thi thử: Cuộc sống trực tuyến</button>
+                    <button onclick="startTest('Comprehensive', 'Training')" class="btn bg-purple-500 hover:bg-purple-600 text-white p-6 text-lg">Luyện tập: Tổng hợp</button>
+                    <button onclick="startTest('Comprehensive', 'Testing')" class="btn btn-purple-700 hover:bg-purple-800 text-white p-6 text-lg">Thi thử: Tổng hợp</button>
+                </div>
+                 <div class="mt-8"><h3 class="text-xl font-semibold text-blue-600 mb-2">Bài thi đã lưu</h3><div id="savedTestsListStudent" class="space-y-2"></div></div>
+            </div>
+            <div id="testTakingView" class="hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 p-4 bg-gray-100 rounded-lg">
+                    <div><h3 id="testTitleStudent" class="text-xl font-semibold text-blue-700"></h3><p id="testModeInfoStudent" class="text-sm text-gray-600"></p></div>
+                    <div class="flex items-center space-x-4 mt-2 md:mt-0"><div id="timer" class="text-2xl font-bold text-red-500"></div><button onclick="confirmEndTest()" class="btn btn-red py-2 px-4">Kết thúc bài thi</button></div>
+                </div>
+                <div class="flex flex-col-reverse md:flex-row gap-6">
+                    <div class="md:w-2/3">
+                        <div id="questionAreaStudent" class="bg-white p-6 rounded-lg shadow">
+                            <p class="text-sm text-gray-500 mb-1">Câu <span id="currentQuestionNumberStudent"></span>/<span id="totalQuestionsStudent"></span></p>
+                            <p id="questionTextDisplayStudent" class="text-lg font-medium mb-6"></p>
+                            <div id="optionsAreaStudent" class="space-y-3"></div>
+                            <div id="trueFalseTableAreaStudent" class="hidden mt-4"></div>
+                             <div id="dragDropAreaStudent" class="hidden mt-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><h4 class="font-semibold text-gray-700 mb-2 text-center">Kéo từ đây:</h4><div id="dragSourceContainer" class="space-y-2 p-2 bg-gray-50 rounded-md border min-h-[100px]"></div></div>
+                                    <div><h4 class="font-semibold text-gray-700 mb-2 text-center">Thả vào đây:</h4><div id="dropZoneContainer" class="space-y-2 p-2 bg-gray-50 rounded-md border min-h-[100px]"></div></div>
+                                </div>
+                            </div>
+                            <div id="explanationAreaStudent" class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md hidden">
+                                <h4 class="font-semibold text-yellow-700">Giải thích:</h4><p id="explanationTextDisplayStudent" class="text-sm text-yellow-600"></p>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+                            <button onclick="prevQuestion()" id="prevBtnStudent" class="btn btn-secondary w-full sm:w-auto">Câu trước</button>
+                            <div class="flex space-x-2"><button onclick="markForReview()" id="markReviewBtnStudent" class="btn bg-yellow-400 hover:bg-yellow-500 text-black w-full sm:w-auto">Đánh dấu xem lại</button><button onclick="saveTestProgress()" id="saveProgressBtnStudent" class="btn bg-blue-500 hover:bg-blue-600 text-white w-full sm:w-auto">Lưu bài</button></div>
+                            <button onclick="nextQuestion()" id="nextBtnStudent" class="btn btn-primary w-full sm:w-auto">Câu tiếp</button>
+                        </div>
+                    </div>
+                    <div class="md:w-1/3"><div class="bg-white p-4 rounded-lg shadow"><h4 class="font-semibold mb-3 text-center text-gray-700">Danh sách câu hỏi</h4><div id="questionNavigatorStudent" class="question-navigator grid grid-cols-5 gap-2 max-h-80 overflow-y-auto"></div></div></div>
+                </div>
+            </div>
+            <div id="resultsViewStudent" class="hidden">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">Kết quả Bài thi</h2>
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <p class="text-lg">Điểm số: <span id="scoreDisplayStudent" class="font-bold"></span></p>
+                    <p class="text-lg">Số câu đúng: <span id="correctAnswersDisplayStudent" class="font-bold"></span></p>
+                    <p class="text-lg">Tổng số câu: <span id="totalQuestionsDisplayStudent" class="font-bold"></span></p>
+                    <p id="passFailMessageStudent" class="text-xl font-semibold mt-2"></p>
+                </div>
+                <h3 class="text-xl font-medium mb-3">Xem lại câu trả lời:</h3><div id="reviewAreaStudent" class="space-y-4"></div>
+                <button onclick="backToTestSelection()" class="btn btn-primary mt-6">Làm bài khác</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmEndTestModal" class="modal hidden">
+        <div class="modal-content text-center">
+            <h3 class="text-xl font-semibold mb-4">Xác nhận Nộp bài</h3>
+            <p class="mb-6">Bạn có chắc chắn muốn kết thúc và nộp bài thi không?</p>
+            <div class="flex justify-center space-x-4"><button onclick="submitTest()" class="btn btn-red">Có, Nộp bài</button><button onclick="closeConfirmEndTestModal()" class="btn btn-secondary">Không, Quay lại</button></div>
+        </div>
+    </div>
+
+    <script>
+        // --- APPLICATION STATE ---
+        let appState = {
+            currentUserRole: null, questions: [], 
+            currentTest: { questions: [], userAnswers: [], currentQuestionIndex: 0, mode: 'Training', module: '', startTime: null, timeLimit: 3000, timerInterval: null, markedForReview: [], remainingTime: undefined },
+            savedTests: [] 
+        };
+
+        // --- DOM ELEMENTS ---
+        const Views = { roleSelection: document.getElementById('roleSelectionView'), admin: document.getElementById('adminView'), student: document.getElementById('studentView'), testSelection: document.getElementById('testSelectionView'), testTaking: document.getElementById('testTakingView'), results: document.getElementById('resultsViewStudent'), confirmEndTestModal: document.getElementById('confirmEndTestModal') };
+        const AdminElements = {
+            questionModule: document.getElementById('questionModuleAdmin'), questionType: document.getElementById('questionTypeAdmin'), questionText: document.getElementById('questionTextAdmin'),
+            mcFields: document.getElementById('mcFieldsAdmin'), optionsContainer: document.getElementById('optionsContainerAdmin'), correctAnswerMC: document.getElementById('correctAnswerAdminMC'),
+            tfFields: document.getElementById('tfFieldsAdmin'), correctAnswerTF: document.getElementById('correctAnswerAdminTF'),
+            tfTableFields: document.getElementById('tfTableFieldsAdmin'), statementsAdminTFTable: document.getElementById('statementsAdminTFTable'), correctAnswersAdminTFTable: document.getElementById('correctAnswersAdminTFTable'), 
+            ddMatchFields: document.getElementById('ddMatchFieldsAdmin'), draggableItems: document.getElementById('draggableItemsAdmin'), dropZoneTargets: document.getElementById('dropZoneTargetsAdmin'),
+            explanationText: document.getElementById('explanationTextAdmin'), questionList: document.getElementById('questionListAdmin'),
+            fileUpload: document.getElementById('fileUploadAdmin'), uploadStatus: document.getElementById('uploadStatusAdmin') 
+        };
+        const StudentElements = {
+            testTitle: document.getElementById('testTitleStudent'), testModeInfo: document.getElementById('testModeInfoStudent'), timer: document.getElementById('timer'),
+            questionArea: document.getElementById('questionAreaStudent'), currentQuestionNumber: document.getElementById('currentQuestionNumberStudent'), totalQuestions: document.getElementById('totalQuestionsStudent'),
+            questionTextDisplay: document.getElementById('questionTextDisplayStudent'), optionsArea: document.getElementById('optionsAreaStudent'), trueFalseTableArea: document.getElementById('trueFalseTableAreaStudent'), 
+            dragDropArea: document.getElementById('dragDropAreaStudent'), dragSourceContainer: document.getElementById('dragSourceContainer'), dropZoneContainer: document.getElementById('dropZoneContainer'),
+            explanationArea: document.getElementById('explanationAreaStudent'), explanationTextDisplay: document.getElementById('explanationTextDisplayStudent'),
+            prevBtn: document.getElementById('prevBtnStudent'), nextBtn: document.getElementById('nextBtnStudent'), markReviewBtn: document.getElementById('markReviewBtnStudent'), saveProgressBtn: document.getElementById('saveProgressBtnStudent'),
+            questionNavigator: document.getElementById('questionNavigatorStudent'), savedTestsList: document.getElementById('savedTestsListStudent'),
+            scoreDisplay: document.getElementById('scoreDisplayStudent'), correctAnswersDisplay: document.getElementById('correctAnswersDisplayStudent'), totalQuestionsDisplay: document.getElementById('totalQuestionsDisplayStudent'),
+            passFailMessage: document.getElementById('passFailMessageStudent'), reviewArea: document.getElementById('reviewAreaStudent')
+        };
+        let draggedItem = null; 
+
+        // --- INITIALIZATION & DATA STORAGE ---
+        function initializeApp() {
+            console.log("Initializing application..."); loadQuestions(); loadSavedTests(); addOptionFieldAdmin(); addOptionFieldAdmin(); renderQuestionListAdmin(); renderSavedTestsStudent(); toggleQuestionTypeFields(); showView(Views.roleSelection); console.log("Application initialized.");
+        }
+        function loadQuestions() {
+            const storedQuestions = localStorage.getItem('ic3SparkQuestions_v4'); 
+            if (storedQuestions) { appState.questions = JSON.parse(storedQuestions); console.log("Loaded questions:", appState.questions.length); } 
+            else {
+                appState.questions = [ 
+                    { id: Date.now() + 1, module: "Computing Fundamentals", questionType: "multiple-choice-single", questionText: "CPU là viết tắt của từ gì?", options: ["Central Processing Unit", "Computer Personal Unit", "Central Power Unit"], correctAnswer: 0, explanation: "CPU là Bộ xử lý trung tâm." },
+                    { id: Date.now() + 2, module: "Key Applications", questionType: "true-false", questionText: "Microsoft Excel chủ yếu dùng để soạn thảo văn bản.", options: ["Đúng", "Sai"], correctAnswer: 1, explanation: "Excel là phần mềm bảng tính, trong khi Word được sử dụng để soạn thảo văn bản." },
+                    { id: Date.now() + 3, module: "Living Online", questionType: "multiple-choice-multiple", questionText: "Những hành động nào sau đây giúp bảo vệ máy tính khỏi virus?", options: ["Cài đặt phần mềm diệt virus", "Không mở email lạ", "Tải phần mềm từ nguồn không rõ", "Cập nhật hệ điều hành"], correctAnswer: [0, 1, 3], explanation: "Tải phần mềm từ nguồn không rõ ràng có thể làm tăng nguy cơ máy tính bị nhiễm virus." },
+                    { id: Date.now() + 4, module: "Computing Fundamentals", questionType: "drag-drop-match", questionText: "Hãy ghép nối các thiết bị sau với chức năng tương ứng của chúng.", draggableItems: ["Bàn phím", "Màn hình", "Máy in"], dropZoneLabels: ["Thiết bị nhập liệu", "Thiết bị xuất", "Thiết bị xuất văn bản/hình ảnh"], correctMapping: [0, 1, 2], explanation: "Bàn phím được sử dụng để nhập dữ liệu. Màn hình và máy in là các thiết bị xuất thông tin." },
+                    { id: Date.now() + 5, module: "Key Applications", questionType: "true-false-table", questionText: "Xác định tính đúng sai của các khẳng định sau:", statements: ["Word dùng để soạn thảo văn bản.", "Excel dùng để tạo bài thuyết trình.", "PowerPoint là một hệ điều hành."], correctAnswer: [0, 1, 1], explanation: "Word là soạn thảo, Excel là bảng tính, PowerPoint là trình chiếu." } 
+                ];
+                saveQuestionsToStorage(); console.log("Initialized with new sample questions.");
+            }
+        }
+        function saveQuestionsToStorage() { localStorage.setItem('ic3SparkQuestions_v4', JSON.stringify(appState.questions)); console.log("Questions saved."); }
+        function loadSavedTests() { const stored = localStorage.getItem('ic3SparkSavedTests_v4'); if (stored) appState.savedTests = JSON.parse(stored); console.log("Loaded saved tests:", appState.savedTests.length); }
+        function saveTestsToStorage() { localStorage.setItem('ic3SparkSavedTests_v4', JSON.stringify(appState.savedTests)); console.log("Saved tests updated."); }
+
+        // --- VIEW MANAGEMENT ---
+        function showView(viewToShow) { [Views.roleSelection, Views.admin, Views.student, Views.confirmEndTestModal].forEach(v => v.classList.add('hidden')); if (viewToShow !== Views.student) [Views.testSelection, Views.testTaking, Views.results].forEach(sv => sv.classList.add('hidden')); if (viewToShow) viewToShow.classList.remove('hidden'); if (viewToShow !== Views.testTaking && appState.currentTest.timerInterval) { clearInterval(appState.currentTest.timerInterval); appState.currentTest.timerInterval = null; } }
+        function selectRole(role) { appState.currentUserRole = role; if (role === 'admin') { showView(Views.admin); renderQuestionListAdmin(); } else { showView(Views.student); showTestSelection(); } }
+        function showRoleSelection() { showView(Views.roleSelection); }
+        function showTestSelection() { Views.testSelection.classList.remove('hidden'); Views.testTaking.classList.add('hidden'); Views.results.classList.add('hidden'); renderSavedTestsStudent(); }
+
+        // --- ADMIN FUNCTIONALITY ---
+        function toggleQuestionTypeFields() { const type = AdminElements.questionType.value; AdminElements.mcFields.classList.toggle('hidden', type !== 'multiple-choice-single' && type !== 'multiple-choice-multiple'); AdminElements.tfFields.classList.toggle('hidden', type !== 'true-false'); AdminElements.tfTableFields.classList.toggle('hidden', type !== 'true-false-table'); AdminElements.ddMatchFields.classList.toggle('hidden', type !== 'drag-drop-match'); }
+        function addOptionFieldAdmin(value = '') { const optionIndex = AdminElements.optionsContainer.children.length; const div = document.createElement('div'); div.classList.add('flex', 'items-center', 'space-x-2', 'mt-1'); div.innerHTML = `<label for="optionAdmin${optionIndex}" class="text-sm font-medium text-gray-700 w-10">L ${optionIndex + 1}:</label><input type="text" id="optionAdmin${optionIndex}" name="optionsAdmin" class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm" value="${value}">${optionIndex > 1 ? '<button type="button" onclick="removeOptionFieldAdmin(this)" class="text-red-500 hover:text-red-700 text-xs p-1">Xóa</button>' : ''}`; AdminElements.optionsContainer.appendChild(div); }
+        function removeOptionFieldAdmin(button) { if (AdminElements.optionsContainer.children.length > 2) { button.parentElement.remove(); Array.from(AdminElements.optionsContainer.children).forEach((child, index) => { child.querySelector('label').textContent = `L ${index + 1}:`; child.querySelector('label').htmlFor = `optionAdmin${index}`; child.querySelector('input').id = `optionAdmin${index}`; }); } else alert("Câu hỏi trắc nghiệm phải có ít nhất 2 lựa chọn."); }
+        function saveQuestion() { const module = AdminElements.questionModule.value; const questionType = AdminElements.questionType.value; const questionText = AdminElements.questionText.value.trim(); const explanation = AdminElements.explanationText.value.trim(); let newQuestionData = { module, questionType, questionText, explanation }; const parsedQuestion = parseQuestionData(newQuestionData, AdminElements); if (parsedQuestion) { appState.questions.push(parsedQuestion); saveQuestionsToStorage(); renderQuestionListAdmin(); alert('Câu hỏi đã được lưu thành công!'); resetAdminForm(); } }
+        function resetAdminForm() { AdminElements.questionText.value = ''; AdminElements.explanationText.value = ''; AdminElements.optionsContainer.innerHTML = ''; addOptionFieldAdmin(); addOptionFieldAdmin(); AdminElements.correctAnswerMC.value = ''; AdminElements.statementsAdminTFTable.value = ''; AdminElements.correctAnswersAdminTFTable.value = ''; AdminElements.draggableItems.value = ''; AdminElements.dropZoneTargets.value = ''; AdminElements.questionModule.selectedIndex = 0; AdminElements.questionType.selectedIndex = 0; toggleQuestionTypeFields(); AdminElements.fileUpload.value = ''; AdminElements.uploadStatus.textContent = ''; }
+        function renderQuestionListAdmin() { AdminElements.questionList.innerHTML = ''; if (appState.questions.length === 0) { AdminElements.questionList.innerHTML = '<p class="text-gray-500">Chưa có câu hỏi nào.</p>'; return; } appState.questions.forEach((q, index) => { const item = document.createElement('div'); item.classList.add('p-3', 'bg-gray-100', 'rounded-md', 'shadow-sm'); let answerPreview = 'N/A'; try { if (q.questionType && q.questionType.startsWith('multiple-choice') && q.options) { if (Array.isArray(q.correctAnswer)) answerPreview = q.correctAnswer.map(i => q.options[i] || `Lỗi index ${i}`).join(', '); else answerPreview = q.options[q.correctAnswer] || `Lỗi index ${q.correctAnswer}`; } else if (q.questionType === 'true-false' && q.options) answerPreview = q.options[q.correctAnswer]; else if (q.questionType === 'true-false-table' && Array.isArray(q.correctAnswer)) answerPreview = `${q.correctAnswer.length} khẳng định`; else if (q.questionType === 'drag-drop-match' && q.draggableItems) answerPreview = `Ghép nối ${q.draggableItems.length} mục`; } catch (e) { console.error("Lỗi xem trước câu trả lời admin:", e, q); } item.innerHTML = `<p class="font-medium text-sm">${index + 1}. [${q.module || 'N/A'}] - [${q.questionType || 'N/A'}] ${q.questionText ? q.questionText.substring(0,70) : 'Lỗi câu hỏi'}...</p><p class="text-xs text-gray-600">Đáp án: ${answerPreview}</p><button onclick="deleteQuestion(${q.id})" class="text-red-500 hover:text-red-700 text-xs mt-1">Xóa</button>`; AdminElements.questionList.appendChild(item); }); }
+        function deleteQuestion(id) { if (confirm('Xóa câu hỏi này?')) { appState.questions = appState.questions.filter(q => q.id !== id); saveQuestionsToStorage(); renderQuestionListAdmin(); } }
+
+        function downloadExcelTemplate() { const templateData = [ ["Module", "QuestionType", "QuestionText", "Option1", "Option2", "Option3", "Option4", "CorrectAnswer", "DraggableItems (D&D)", "DropZoneLabels (D&D)", "Statements (T/F Table, one per line)", "CorrectAnswers (T/F Table, 0/1 comma-sep)", "Explanation"], ["Computing Fundamentals", "multiple-choice-single", "What is RAM?", "Random Access Memory", "Read Only Memory", "Rapid Action Memory", "", "1", "", "", "", "", "RAM is volatile memory."], ["Key Applications", "multiple-choice-multiple", "Which are presentation software?", "MS Word", "MS PowerPoint", "Google Slides", "MS Excel", "2,3", "", "", "", "", "PowerPoint and Slides are for presentations."], ["Living Online", "true-false", "Is phishing a type of malware?", "", "", "", "", "0", "", "", "", "", "Phishing is social engineering. (0 for True, 1 for False)"], ["Key Applications", "true-false-table", "Assess these statements:", "", "", "", "", "", "", "", "Excel is a database.\nWord can insert images.\nBrowsers run on operating systems.", "1,0,0", "Excel is spreadsheet, Word can use images, Browsers need OS."], ["Computing Fundamentals", "drag-drop-match", "Match devices to categories.", "", "", "", "", "", "Keyboard\nMonitor\nMouse", "Input Device\nOutput Device\nInput Device", "", "", "Keyboard and Mouse are input, Monitor is output."] ]; const ws = XLSX.utils.aoa_to_sheet(templateData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "QuestionsTemplate"); XLSX.writeFile(wb, "template_questions_ic3_v2.xlsx"); }
+        function showWordTemplateGuidance() { const guidance = `Hướng dẫn cấu trúc File Word (Khuyến khích dùng Excel để tải lên hàng loạt):\n\nDo việc phân tích file Word tự động rất phức tạp, vui lòng chuyển đổi nội dung sang file Excel theo mẫu được cung cấp để tải lên.\nNếu bạn vẫn muốn soạn thảo trên Word trước, hãy tuân theo cấu trúc gợi ý sau để dễ dàng chuyển đổi:\n\nMỗi câu hỏi nên bắt đầu bằng một định danh rõ ràng.\nVí dụ:\n\n**Module:** Computing Fundamentals\n**QuestionType:** multiple-choice-single \n**QuestionText:** CPU là viết tắt của từ gì?\n**Option1:** Central Processing Unit\n**Option2:** Computer Personal Unit\n**CorrectAnswer:** 1 \n**Explanation:** CPU là Bộ xử lý trung tâm.\n\n---\n\n**Module:** Key Applications\n**QuestionType:** true-false-table\n**QuestionText:** Xác định tính đúng/sai:\n**Statements:** (Mỗi khẳng định trên một dòng)\nCâu lệnh 1 đúng.\nCâu lệnh 2 sai.\n**CorrectAnswers (Table):** 0,1 (0 cho Đúng, 1 cho Sai, cách nhau bằng dấu phẩy)\n**Explanation:** Giải thích chung.\n\nLƯU Ý QUAN TRỌNG:\n- **CorrectAnswer** cho trắc nghiệm chọn 1 và T/F đơn là số (1) hoặc (0/1).\n- **CorrectAnswer** cho trắc nghiệm chọn nhiều là danh sách số cách nhau bởi dấu phẩy (vd: 1,3).\n- **CorrectAnswers (Table)** cho T/F Bảng là danh sách 0 hoặc 1 cách nhau bởi dấu phẩy, tương ứng với từng khẳng định.\n- **DraggableItems** và **DropZoneLabels**: mỗi mục trên một dòng. Số lượng và thứ tự phải khớp nhau.\n- **Statements** cho T/F Bảng: mỗi khẳng định trên một dòng.`; alert(guidance); }
+        
+        function handleFileUpload() { 
+            const file = AdminElements.fileUpload.files[0]; 
+            if (!file) { 
+                AdminElements.uploadStatus.textContent = "Vui lòng chọn một file."; 
+                AdminElements.uploadStatus.className = "mt-3 text-sm text-red-600"; 
+                return; 
+            } 
+            AdminElements.uploadStatus.textContent = "Đang xử lý..."; 
+            AdminElements.uploadStatus.className = "mt-3 text-sm text-blue-600"; 
+            const reader = new FileReader(); 
+            reader.onload = function(e) { 
+                try { 
+                    const data = new Uint8Array(e.target.result); 
+                    const workbook = XLSX.read(data, {type: 'array'}); 
+                    const firstSheetName = workbook.SheetNames[0]; 
+                    const worksheet = workbook.Sheets[firstSheetName]; 
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); 
+                    if (jsonData.length < 2) { AdminElements.uploadStatus.textContent = "File Excel rỗng hoặc sai định dạng."; AdminElements.uploadStatus.className = "mt-3 text-sm text-red-600"; return; } 
+                    
+                    const headerRowFromFile = jsonData[0].map(h => typeof h === 'string' ? h.trim().toLowerCase() : String(h).toLowerCase());
+                    const headerMap = {};
+
+                    const headerDefinitions = {
+                        module: ["module", "chủ đề"],
+                        questionType: ["questiontype", "loại câu hỏi"],
+                        questionText: ["questiontext", "nội dung câu hỏi", "yêu cầu chung"],
+                        correctAnswer: ["correctanswer", "đáp án đúng"],
+                        draggableItems: ["draggableitems (d&d)", "draggableitems", "các mục kéo"],
+                        dropZoneLabels: ["dropzonelabels (d&d)", "dropzonelabels", "các mục tiêu thả"],
+                        statements: ["statements (t/f table, one per line)", "statements", "các câu khẳng định"],
+                        correctAnswersTable: ["correctanswers (t/f table, 0/1 comma-sep)", "correctanswers (t/f table)", "đáp án đúng cho bảng"],
+                        explanation: ["explanation", "giải thích"]
+                    };
+                    const optionPrefix = "option";
+
+                    for (const key in headerDefinitions) {
+                        for (const possibleHeader of headerDefinitions[key]) {
+                            const columnIndex = headerRowFromFile.indexOf(possibleHeader.toLowerCase());
+                            if (columnIndex !== -1) {
+                                headerMap[key] = columnIndex;
+                                break; 
+                            }
+                        }
+                    }
+
+                    headerMap.options = [];
+                    headerRowFromFile.forEach((header, index) => {
+                        if (header.startsWith(optionPrefix)) {
+                            const match = header.match(/option(\d+)/);
+                            const order = match ? parseInt(match[1]) : Infinity; 
+                            headerMap.options.push({ name: header, index: index, order: order });
+                        }
+                    });
+                    headerMap.options.sort((a, b) => {
+                        if (a.order !== b.order) return a.order - b.order;
+                        return a.index - b.index; 
+                    });
+                    
+                    const questionsFromFile = []; 
+                    let questionsAdded = 0, errorsEncountered = 0; 
+
+                    const essentialHeaders = ['module', 'questionType', 'questionText'];
+                    let missingHeaders = [];
+                    essentialHeaders.forEach(key => {
+                        if (headerMap[key] === undefined) {
+                            missingHeaders.push(headerDefinitions[key][0]); 
+                        }
+                    });
+
+                    if (missingHeaders.length > 0) {
+                         AdminElements.uploadStatus.textContent = `File Excel thiếu các cột bắt buộc: ${missingHeaders.join(', ')}. Vui lòng kiểm tra file mẫu.`;
+                         AdminElements.uploadStatus.className = "mt-3 text-sm text-red-600";
+                         console.error("Missing essential headers in Excel file. Expected and not found:", missingHeaders, "Found map:", headerMap);
+                         return;
+                    }
+                    
+                    for (let i = 1; i < jsonData.length; i++) { 
+                        const row = jsonData[i]; 
+                        if (!row || row.every(cell => cell === null || cell === undefined || String(cell).trim() === "")) continue; 
+                        const questionData = { 
+                            module: row[headerMap.module], 
+                            questionType: row[headerMap.questionType], 
+                            questionText: row[headerMap.questionText], 
+                            optionsInput: [], 
+                            correctAnswerInput: String(row[headerMap.correctAnswer] || '').trim(), 
+                            draggableItemsInput: row[headerMap.draggableItems] || "", 
+                            dropZoneLabelsInput: row[headerMap.dropZoneLabels] || "", 
+                            statementsInput: row[headerMap.statements] || "", 
+                            correctAnswersTableInput: String(row[headerMap.correctAnswersTable] || "").trim(), 
+                            explanation: row[headerMap.explanation] || "" 
+                        }; 
+                        if (headerMap.options) { 
+                            questionData.optionsInput = headerMap.options.map(optCol => String(row[optCol.index] || '').trim()).filter(opt => opt !== ""); 
+                        } 
+                        const parsedQuestion = parseQuestionDataFromFile(questionData); 
+                        if (parsedQuestion) { questionsFromFile.push(parsedQuestion); questionsAdded++; } 
+                        else { errorsEncountered++; console.warn(`Lỗi dòng ${i+1}:`, questionData); } 
+                    } 
+                    if (questionsFromFile.length > 0) { appState.questions.push(...questionsFromFile); saveQuestionsToStorage(); renderQuestionListAdmin(); } 
+                    AdminElements.uploadStatus.textContent = `Hoàn tất! ${questionsAdded} câu hỏi được thêm. ${errorsEncountered > 0 ? errorsEncountered + ' dòng lỗi.' : ''}`; 
+                    AdminElements.uploadStatus.className = `mt-3 text-sm ${errorsEncountered > 0 ? 'text-yellow-600' : 'text-green-600'}`; 
+                    AdminElements.fileUpload.value = ''; 
+                } catch (error) { 
+                    console.error("Lỗi xử lý file Excel:", error); 
+                    AdminElements.uploadStatus.textContent = "Lỗi xử lý file. Kiểm tra console."; 
+                    AdminElements.uploadStatus.className = "mt-3 text-sm text-red-600"; 
+                }
+            }; 
+            reader.onerror = function() { 
+                AdminElements.uploadStatus.textContent = "Lỗi đọc file."; 
+                AdminElements.uploadStatus.className = "mt-3 text-sm text-red-600"; 
+            }; 
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function parseQuestionDataFromFile(data) { if (!data.module || !data.questionType || !data.questionText) return null; let newQuestion = { id: Date.now() + Math.random(), module: data.module.trim(), questionType: data.questionType.trim(), questionText: data.questionText.trim(), explanation: data.explanation ? data.explanation.trim() : "", options: [], correctAnswer: null }; switch (newQuestion.questionType) { case 'multiple-choice-single': case 'multiple-choice-multiple': newQuestion.options = data.optionsInput.filter(opt => opt && opt.trim() !== ""); if (newQuestion.options.length < 2) return null; if (newQuestion.questionType === 'multiple-choice-single') { if (!data.correctAnswerInput && data.correctAnswerInput !== "0") return null; const ansIndex = parseInt(data.correctAnswerInput) - 1; if (isNaN(ansIndex) || ansIndex < 0 || ansIndex >= newQuestion.options.length) return null; newQuestion.correctAnswer = ansIndex; } else { if (!data.correctAnswerInput) return null; newQuestion.correctAnswer = data.correctAnswerInput.split(',').map(s => parseInt(s.trim()) - 1).filter(n => !isNaN(n) && n >= 0 && n < newQuestion.options.length).sort((a,b) => a-b); if (newQuestion.correctAnswer.length === 0) return null; } break; case 'true-false': newQuestion.options = ["Đúng", "Sai"]; if (!data.correctAnswerInput && data.correctAnswerInput !== "0") return null; const tfAns = parseInt(data.correctAnswerInput); if (isNaN(tfAns) || (tfAns !== 0 && tfAns !== 1)) return null; newQuestion.correctAnswer = tfAns; break; case 'true-false-table': newQuestion.statements = data.statementsInput.split('\n').map(s => s.trim()).filter(s => s !== ""); if (newQuestion.statements.length === 0) return null; if (!data.correctAnswersTableInput) return null; newQuestion.correctAnswer = data.correctAnswersTableInput.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && (n === 0 || n === 1)); if (newQuestion.statements.length !== newQuestion.correctAnswer.length) { console.warn("T/F Table: Số lượng khẳng định và đáp án không khớp.", data); return null; } newQuestion.options = ["Đúng", "Sai"]; break; case 'drag-drop-match': newQuestion.draggableItems = data.draggableItemsInput.split('\n').map(s=>s.trim()).filter(s => s !== ""); newQuestion.dropZoneLabels = data.dropZoneLabelsInput.split('\n').map(s=>s.trim()).filter(s => s !== ""); if (newQuestion.draggableItems.length === 0 || newQuestion.draggableItems.length !== newQuestion.dropZoneLabels.length) return null; newQuestion.correctMapping = newQuestion.draggableItems.map((_, i) => i); newQuestion.options = [...newQuestion.draggableItems, ...newQuestion.dropZoneLabels]; break; default: console.warn("Loại câu hỏi không rõ từ file:", newQuestion.questionType); return null; } return newQuestion; }
+        function parseQuestionData(baseData, elements) { let newQuestion = { id: Date.now(), ...baseData, options: [], correctAnswer: null }; if (!newQuestion.questionText) { alert('Nhập nội dung câu hỏi.'); return null; } switch (newQuestion.questionType) { case 'multiple-choice-single': case 'multiple-choice-multiple': const optionInputs = Array.from(elements.optionsContainer.querySelectorAll('input[name="optionsAdmin"]')); newQuestion.options = optionInputs.map(input => input.value.trim()).filter(opt => opt !== ""); if (newQuestion.options.length < 2) { alert('Trắc nghiệm cần ít nhất 2 lựa chọn.'); return null; } const correctAnsStr = elements.correctAnswerMC.value.trim(); if (!correctAnsStr) { alert('Nhập đáp án đúng.'); return null; } if (newQuestion.questionType === 'multiple-choice-single') { const ansIndex = parseInt(correctAnsStr) - 1; if (isNaN(ansIndex) || ansIndex < 0 || ansIndex >= newQuestion.options.length) { alert('Đáp án (chọn 1) không hợp lệ.'); return null; } newQuestion.correctAnswer = ansIndex; } else { newQuestion.correctAnswer = correctAnsStr.split(',').map(s => parseInt(s.trim()) - 1).filter(n => !isNaN(n) && n >= 0 && n < newQuestion.options.length).sort((a,b) => a-b); if (newQuestion.correctAnswer.length === 0) { alert('Đáp án (chọn nhiều) không hợp lệ.'); return null; } } break; case 'true-false': newQuestion.options = ["Đúng", "Sai"]; newQuestion.correctAnswer = parseInt(elements.correctAnswerTF.value); break; case 'true-false-table': newQuestion.statements = elements.statementsAdminTFTable.value.trim().split('\n').map(s => s.trim()).filter(s => s !== ""); if (newQuestion.statements.length === 0) { alert("Nhập ít nhất một khẳng định cho bảng Đúng/Sai."); return null; } newQuestion.correctAnswer = elements.correctAnswersAdminTFTable.value.trim().split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && (n === 0 || n === 1)); if (newQuestion.statements.length !== newQuestion.correctAnswer.length) { alert("Số lượng khẳng định và đáp án cho bảng Đúng/Sai không khớp."); return null; } newQuestion.options = ["Đúng", "Sai"]; break; case 'drag-drop-match': newQuestion.draggableItems = elements.draggableItems.value.trim().split('\n').map(s=>s.trim()).filter(s => s !== ""); newQuestion.dropZoneLabels = elements.dropZoneTargets.value.trim().split('\n').map(s=>s.trim()).filter(s => s !== ""); if (newQuestion.draggableItems.length === 0 || newQuestion.draggableItems.length !== newQuestion.dropZoneLabels.length) { alert('Mục kéo và mục tiêu thả phải bằng nhau và không rỗng.'); return null; } newQuestion.correctMapping = newQuestion.draggableItems.map((_, i) => i); newQuestion.options = [...newQuestion.draggableItems, ...newQuestion.dropZoneLabels]; break; default: alert("Loại câu hỏi không xác định!"); return null; } return newQuestion; }
+
+        function startTest(module, mode, savedTestId = null) { let testQuestions; if (savedTestId) { const savedState = appState.savedTests.find(t => t.id === savedTestId); if (!savedState) { alert("Không tìm thấy bài đã lưu!"); return; } appState.currentTest = { ...savedState }; appState.currentTest.startTime = Date.now() - (savedState.timeLimit * 1000 - savedState.remainingTime * 1000); appState.savedTests = appState.savedTests.filter(t => t.id !== savedTestId); saveTestsToStorage(); } else { testQuestions = (module === 'Comprehensive') ? [...appState.questions] : appState.questions.filter(q => q.module === module); if (testQuestions.length === 0) { alert(`Không có câu hỏi cho chủ đề "${module}".`); return; } appState.currentTest = { questions: testQuestions, userAnswers: testQuestions.map(q => { if (q.questionType === 'drag-drop-match' && q.dropZoneLabels) return new Array(q.dropZoneLabels.length).fill(null); if (q.questionType === 'multiple-choice-multiple') return []; if (q.questionType === 'true-false-table' && q.statements) return new Array(q.statements.length).fill(null); return null; }), currentQuestionIndex: 0, mode, module, startTime: Date.now(), timeLimit: testQuestions.length * 90, timerInterval: null, markedForReview: new Array(testQuestions.length).fill(false), remainingTime: testQuestions.length * 90 }; } StudentElements.testTitle.textContent = `Bài thi: ${appState.currentTest.module}`; StudentElements.testModeInfo.textContent = `Chế độ: ${appState.currentTest.mode === 'Training' ? 'Luyện tập' : 'Thi thử'}`; showView(Views.student); Views.testSelection.classList.add('hidden'); Views.testTaking.classList.remove('hidden'); Views.results.classList.add('hidden'); StudentElements.explanationArea.classList.add('hidden'); displayCurrentQuestion(); updateQuestionNavigator(); startTimer(); }
+        function saveTestProgress() { if (!appState.currentTest.questions || appState.currentTest.questions.length === 0) { alert("Không có bài thi nào đang diễn ra."); return; } let currentRemainingTime = appState.currentTest.remainingTime; if (appState.currentTest.mode === 'Testing' && appState.currentTest.timerInterval) {} else { currentRemainingTime = appState.currentTest.timeLimit - (Date.now() - appState.currentTest.startTime) / 1000; } const testToSave = { ...appState.currentTest, id: Date.now(), remainingTime: Math.max(0, currentRemainingTime) }; delete testToSave.timerInterval; const existingIndex = appState.savedTests.findIndex(t => t.module === testToSave.module && t.mode === testToSave.mode); if (existingIndex > -1) appState.savedTests[existingIndex] = testToSave; else appState.savedTests.push(testToSave); saveTestsToStorage(); alert("Bài làm đã lưu!"); if (appState.currentTest.timerInterval) clearInterval(appState.currentTest.timerInterval); showTestSelection(); }
+        function renderSavedTestsStudent() { StudentElements.savedTestsList.innerHTML = ''; if (appState.savedTests.length === 0) { StudentElements.savedTestsList.innerHTML = '<p class="text-gray-500">Không có bài thi nào được lưu.</p>'; return; } appState.savedTests.forEach(savedTest => { const item = document.createElement('div'); item.classList.add('p-3', 'bg-blue-50', 'rounded-md', 'shadow-sm', 'flex', 'justify-between', 'items-center'); const mins = Math.floor(savedTest.remainingTime / 60); const secs = Math.floor(savedTest.remainingTime % 60); let answeredCount = 0; if (Array.isArray(savedTest.userAnswers)) answeredCount = savedTest.userAnswers.filter(ans => (Array.isArray(ans) ? ans.some(subAns => subAns !== null) : ans !== null)).length; item.innerHTML = `<div><p class="font-medium">${savedTest.module} (${savedTest.mode === 'Training' ? 'Luyện tập' : 'Thi thử'})</p><p class="text-xs text-gray-600">Đã làm ${answeredCount}/${savedTest.questions.length} câu. Thời gian còn lại: ${mins}:${secs < 10 ? '0':''}${secs}</p></div><div><button onclick="startTest('${savedTest.module}', '${savedTest.mode}', ${savedTest.id})" class="btn btn-green text-sm py-1 px-3 mr-2">Tiếp tục</button><button onclick="deleteSavedTest(${savedTest.id})" class="btn btn-red text-sm py-1 px-3">Xóa</button></div>`; StudentElements.savedTestsList.appendChild(item); }); }
+        function deleteSavedTest(id) { if (confirm("Xóa bài thi đã lưu này?")) { appState.savedTests = appState.savedTests.filter(t => t.id !== id); saveTestsToStorage(); renderSavedTestsStudent(); } }
+
+        function displayCurrentQuestion() { 
+            const qIndex = appState.currentTest.currentQuestionIndex; const question = appState.currentTest.questions[qIndex];
+            if (!question) { console.error("Câu hỏi không xác định tại index:", qIndex); return; }
+            StudentElements.currentQuestionNumber.textContent = qIndex + 1; StudentElements.totalQuestions.textContent = appState.currentTest.questions.length; StudentElements.questionTextDisplay.textContent = question.questionText;
+            StudentElements.optionsArea.innerHTML = ''; StudentElements.dragDropArea.classList.add('hidden'); StudentElements.trueFalseTableArea.classList.add('hidden'); StudentElements.trueFalseTableArea.innerHTML = ''; StudentElements.optionsArea.classList.remove('hidden'); 
+            switch (question.questionType) {
+                case 'multiple-choice-single': case 'true-false': 
+                    question.options.forEach((option, index) => { const optionDiv = document.createElement('div'); optionDiv.classList.add('question-option'); optionDiv.innerHTML = `<label for="opt-${qIndex}-${index}" class="w-full h-full block cursor-pointer p-0 m-0"><input type="radio" name="mcOption-${qIndex}" id="opt-${qIndex}-${index}" value="${index}" class="mr-2 sr-only"> ${option}</label>`; optionDiv.onclick = (event) => { event.stopPropagation(); selectAnswer(index); }; if (appState.currentTest.userAnswers[qIndex] === index) { optionDiv.classList.add('selected'); const radioInput = optionDiv.querySelector('input'); if(radioInput) radioInput.checked = true; } StudentElements.optionsArea.appendChild(optionDiv); }); break;
+                case 'multiple-choice-multiple':
+                    question.options.forEach((option, index) => { const optionDiv = document.createElement('div'); optionDiv.classList.add('question-option'); const isSelected = appState.currentTest.userAnswers[qIndex] && appState.currentTest.userAnswers[qIndex].includes(index); optionDiv.innerHTML = `<label for="opt-m-${qIndex}-${index}" class="w-full h-full block cursor-pointer p-0 m-0"><input type="checkbox" id="opt-m-${qIndex}-${index}" value="${index}" class="mr-2 sr-only" ${isSelected ? 'checked' : ''}> ${option}</label>`; optionDiv.onclick = (event) => { event.stopPropagation(); selectAnswer(index, true); }; if (isSelected) optionDiv.classList.add('selected'); StudentElements.optionsArea.appendChild(optionDiv); }); break;
+                case 'true-false-table':
+                    StudentElements.optionsArea.classList.add('hidden'); StudentElements.trueFalseTableArea.classList.remove('hidden');
+                    renderTrueFalseTableQuestion(question, qIndex); break;
+                case 'drag-drop-match': StudentElements.optionsArea.classList.add('hidden'); StudentElements.dragDropArea.classList.remove('hidden'); renderDragDropQuestion(question, qIndex); break;
+                default: StudentElements.optionsArea.innerHTML = "<p class='text-red-500'>Lỗi: Loại câu hỏi không xác định.</p>";
+            }
+            StudentElements.prevBtn.disabled = qIndex === 0; StudentElements.nextBtn.disabled = qIndex === appState.currentTest.questions.length - 1;
+            const markReviewBtn = StudentElements.markReviewBtn; markReviewBtn.textContent = appState.currentTest.markedForReview[qIndex] ? 'Bỏ đánh dấu' : 'Đánh dấu xem lại'; markReviewBtn.classList.toggle('bg-yellow-600', appState.currentTest.markedForReview[qIndex]); markReviewBtn.classList.toggle('bg-yellow-400', !appState.currentTest.markedForReview[qIndex]);
+            StudentElements.explanationArea.classList.add('hidden'); updateQuestionNavigatorSelection(); 
+        }
+
+        function renderTrueFalseTableQuestion(question, qIndex) { 
+            const table = document.createElement('table'); table.className = 'w-full border-collapse'; const tbody = document.createElement('tbody');
+            (question.statements || []).forEach((statement, stmtIndex) => {
+                const row = tbody.insertRow(); row.className = 'true-false-statement-row border-b border-gray-200';
+                const cellStatement = row.insertCell(); cellStatement.textContent = statement; cellStatement.className = 'py-2 pr-4 text-sm';
+                const cellTrue = row.insertCell(); cellTrue.className = 'py-2 px-2 text-center'; const radioTrue = document.createElement('input'); radioTrue.type = 'radio'; radioTrue.name = `tf-stmt-${qIndex}-${stmtIndex}`; radioTrue.value = '0'; radioTrue.className = 'form-radio h-4 w-4 text-blue-600'; radioTrue.onclick = () => selectAnswerForTFTable(qIndex, stmtIndex, 0); if (appState.currentTest.userAnswers[qIndex] && appState.currentTest.userAnswers[qIndex][stmtIndex] === 0) radioTrue.checked = true; const labelTrue = document.createElement('label'); labelTrue.className = 'ml-1 text-sm cursor-pointer'; labelTrue.textContent = 'Đúng'; labelTrue.prepend(radioTrue); cellTrue.appendChild(labelTrue);
+                const cellFalse = row.insertCell(); cellFalse.className = 'py-2 px-2 text-center'; const radioFalse = document.createElement('input'); radioFalse.type = 'radio'; radioFalse.name = `tf-stmt-${qIndex}-${stmtIndex}`; radioFalse.value = '1'; radioFalse.className = 'form-radio h-4 w-4 text-blue-600'; radioFalse.onclick = () => selectAnswerForTFTable(qIndex, stmtIndex, 1); if (appState.currentTest.userAnswers[qIndex] && appState.currentTest.userAnswers[qIndex][stmtIndex] === 1) radioFalse.checked = true; const labelFalse = document.createElement('label'); labelFalse.className = 'ml-1 text-sm cursor-pointer'; labelFalse.textContent = 'Sai'; labelFalse.prepend(radioFalse); cellFalse.appendChild(labelFalse);
+            });
+            table.appendChild(tbody); StudentElements.trueFalseTableArea.appendChild(table);
+        }
+        function renderDragDropQuestion(question, qIndex) { console.log("[renderDragDropQuestion] Q_Index:", qIndex, JSON.parse(JSON.stringify(question))); StudentElements.dragSourceContainer.innerHTML = ''; StudentElements.dropZoneContainer.innerHTML = ''; if (!question.draggableItems || !question.dropZoneLabels) { StudentElements.dropZoneContainer.innerHTML = "<p class='text-red-500'>Lỗi cấu hình kéo thả.</p>"; return; } const currentAnswers = appState.currentTest.userAnswers[qIndex] || []; const itemsToDisplay = question.draggableItems.map((text, originalIdx) => ({ text, originalIdx })); itemsToDisplay.sort(() => Math.random() - 0.5); itemsToDisplay.forEach(itemObj => { const dragDiv = document.createElement('div'); dragDiv.id = `drag-${qIndex}-${itemObj.originalIdx}`; dragDiv.textContent = itemObj.text; dragDiv.classList.add('drag-option-source', 'p-2', 'rounded', 'border', 'bg-indigo-100', 'text-indigo-700'); dragDiv.draggable = true; dragDiv.dataset.originalIndex = itemObj.originalIdx; dragDiv.addEventListener('dragstart', handleDragStart); if (currentAnswers.includes(itemObj.originalIdx)) { dragDiv.style.opacity = '0.3'; dragDiv.draggable = false; } StudentElements.dragSourceContainer.appendChild(dragDiv); }); question.dropZoneLabels.forEach((label, zoneIndex) => { const dropDiv = document.createElement('div'); dropDiv.id = `dropzone-${qIndex}-${zoneIndex}`; dropDiv.classList.add('drop-zone-target', 'p-2', 'rounded', 'border-dashed', 'border-gray-400', 'min-h-[40px]', 'flex', 'items-center', 'justify-center', 'text-gray-500'); dropDiv.dataset.zoneIndex = zoneIndex; dropDiv.textContent = label; dropDiv.addEventListener('dragover', handleDragOver); dropDiv.addEventListener('dragleave', handleDragLeave); dropDiv.addEventListener('drop', handleDrop); const droppedItemOriginalIndex = currentAnswers[zoneIndex]; if (droppedItemOriginalIndex !== null && droppedItemOriginalIndex !== undefined && question.draggableItems[droppedItemOriginalIndex] !== undefined) { dropDiv.textContent = question.draggableItems[droppedItemOriginalIndex]; dropDiv.classList.add('dropped', 'bg-indigo-200', 'text-indigo-800', 'border-solid'); dropDiv.classList.remove('text-gray-500'); } else if (droppedItemOriginalIndex !== null && droppedItemOriginalIndex !== undefined) { dropDiv.classList.add('dropped', 'bg-yellow-100', 'text-yellow-700', 'border-solid'); dropDiv.classList.remove('text-gray-500'); } StudentElements.dropZoneContainer.appendChild(dropDiv); }); }
+        function selectAnswerForTFTable(qIndex, stmtIndex, choice) { if (!appState.currentTest.userAnswers[qIndex] || !Array.isArray(appState.currentTest.userAnswers[qIndex])) { const numStatements = appState.currentTest.questions[qIndex].statements.length; appState.currentTest.userAnswers[qIndex] = new Array(numStatements).fill(null); } appState.currentTest.userAnswers[qIndex][stmtIndex] = choice; const radioButtonsInRow = document.querySelectorAll(`input[name="tf-stmt-${qIndex}-${stmtIndex}"]`); radioButtonsInRow.forEach(rb => rb.checked = (parseInt(rb.value) === choice)); if (appState.currentTest.mode === 'Training') { const allAnswered = appState.currentTest.userAnswers[qIndex].every(ans => ans !== null); if (allAnswered) showExplanation(qIndex); } updateQuestionNavigator(); }
+        function selectAnswer(optionIndex, isMultiple = false) { const qIndex = appState.currentTest.currentQuestionIndex; const question = appState.currentTest.questions[qIndex]; if (question.questionType === 'true-false-table') return; if (isMultiple && !Array.isArray(appState.currentTest.userAnswers[qIndex])) appState.currentTest.userAnswers[qIndex] = []; if (isMultiple) { let currentAnswers = appState.currentTest.userAnswers[qIndex]; const itemIndexInAnswers = currentAnswers.indexOf(optionIndex); if (itemIndexInAnswers > -1) currentAnswers.splice(itemIndexInAnswers, 1); else currentAnswers.push(optionIndex); appState.currentTest.userAnswers[qIndex] = currentAnswers.sort((a,b) => a-b); } else appState.currentTest.userAnswers[qIndex] = optionIndex; const optionDivs = StudentElements.optionsArea.querySelectorAll('.question-option'); optionDivs.forEach((div, idx) => { const input = div.querySelector('input'); let isSelected = isMultiple ? appState.currentTest.userAnswers[qIndex].includes(idx) : (idx === optionIndex); div.classList.toggle('selected', isSelected); if(input) input.checked = isSelected; }); if (appState.currentTest.mode === 'Training') showExplanation(qIndex); updateQuestionNavigator(); }
+        function showExplanation(qIndex) { const question = appState.currentTest.questions[qIndex]; const userAnswer = appState.currentTest.userAnswers[qIndex]; StudentElements.explanationArea.classList.add('hidden'); if (!question || userAnswer === null || (Array.isArray(userAnswer) && userAnswer.length === 0 && question.questionType !== 'drag-drop-match' && question.questionType !== 'true-false-table') || (question.questionType === 'true-false-table' && (!Array.isArray(userAnswer) || userAnswer.some(ans => ans === null)) ) ) { if (question.questionType !== 'drag-drop-match' && question.questionType !== 'true-false-table') return; if(question.questionType === 'true-false-table' && (!Array.isArray(userAnswer) || userAnswer.some(ans => ans === null))) return; } if (question.explanation) { StudentElements.explanationTextDisplay.textContent = question.explanation; StudentElements.explanationArea.classList.remove('hidden'); } if (question.questionType.startsWith('multiple-choice') || question.questionType === 'true-false') { const optionDivs = StudentElements.optionsArea.querySelectorAll('.question-option'); optionDivs.forEach((div, idx) => { div.classList.remove('correct', 'incorrect'); div.onclick = null; let isCorrectOption = question.questionType === 'multiple-choice-multiple' ? question.correctAnswer.includes(idx) : (idx === question.correctAnswer); let isUserSelectedOption = question.questionType === 'multiple-choice-multiple' ? userAnswer.includes(idx) : (idx === userAnswer); if (isCorrectOption) div.classList.add('correct'); else if (isUserSelectedOption && !isCorrectOption) div.classList.add('incorrect'); }); } else if (question.questionType === 'true-false-table') { const tableRows = StudentElements.trueFalseTableArea.querySelectorAll('.true-false-statement-row'); tableRows.forEach((row, stmtIndex) => { const userChoice = userAnswer[stmtIndex]; const correctChoice = question.correctAnswer[stmtIndex]; const cells = row.querySelectorAll('td'); const trueCell = cells[1]; const falseCell = cells[2]; trueCell.classList.remove('correct-cell', 'incorrect-cell'); falseCell.classList.remove('correct-cell', 'incorrect-cell'); trueCell.querySelectorAll('input').forEach(rb => rb.disabled = true); falseCell.querySelectorAll('input').forEach(rb => rb.disabled = true); if (userChoice === correctChoice) { if (correctChoice === 0) trueCell.classList.add('correct-cell'); else falseCell.classList.add('correct-cell'); } else { if (userChoice === 0) trueCell.classList.add('incorrect-cell'); else if (userChoice === 1) falseCell.classList.add('incorrect-cell'); if (correctChoice === 0) trueCell.classList.add('correct-cell'); else falseCell.classList.add('correct-cell'); } }); } else if (question.questionType === 'drag-drop-match') { const dropZones = StudentElements.dropZoneContainer.querySelectorAll('.drop-zone-target'); dropZones.forEach((zone, zoneIdx) => { zone.classList.remove('correct', 'incorrect'); const droppedItemOriginalIndex = userAnswer[zoneIdx]; const isZoneCorrect = (droppedItemOriginalIndex === question.correctMapping[zoneIdx]); if (droppedItemOriginalIndex !== null && droppedItemOriginalIndex !== undefined) { if (isZoneCorrect) zone.classList.add('correct'); else zone.classList.add('incorrect'); } zone.removeEventListener('dragover', handleDragOver); zone.removeEventListener('drop', handleDrop); }); StudentElements.dragSourceContainer.querySelectorAll('.drag-option-source').forEach(s => s.draggable = false); } updateQuestionNavigator(); }
+        function nextQuestion() { if (appState.currentTest.currentQuestionIndex < appState.currentTest.questions.length - 1) { appState.currentTest.currentQuestionIndex++; displayCurrentQuestion(); } }
+        function prevQuestion() { if (appState.currentTest.currentQuestionIndex > 0) { appState.currentTest.currentQuestionIndex--; displayCurrentQuestion(); } }
+        function markForReview() { const qIndex = appState.currentTest.currentQuestionIndex; appState.currentTest.markedForReview[qIndex] = !appState.currentTest.markedForReview[qIndex]; displayCurrentQuestion(); updateQuestionNavigator(); }
+        function updateQuestionNavigator() { const navigator = StudentElements.questionNavigator; navigator.innerHTML = ''; appState.currentTest.questions.forEach((q, index) => { const btn = document.createElement('button'); btn.textContent = index + 1; btn.id = `nav-q-${index}`; btn.classList.add('p-2', 'border', 'rounded', 'text-sm', 'transition-colors', 'focus:outline-none', 'focus:ring-2', 'focus:ring-blue-300'); let isAnswered = false; const currentAnswer = appState.currentTest.userAnswers[index]; if (q.questionType === 'multiple-choice-multiple') isAnswered = Array.isArray(currentAnswer) && currentAnswer.length > 0; else if (q.questionType === 'drag-drop-match' || q.questionType === 'true-false-table') isAnswered = Array.isArray(currentAnswer) && currentAnswer.some(val => val !== null && val !== undefined); else isAnswered = currentAnswer !== null; if (index === appState.currentTest.currentQuestionIndex) btn.classList.add('bg-blue-500', 'text-white', 'border-blue-700'); else if (isAnswered) { if (appState.currentTest.mode === 'Training') { let isCorrect = false; const userAnswer = appState.currentTest.userAnswers[index]; const question = appState.currentTest.questions[index]; switch (question.questionType) { case 'multiple-choice-single': case 'true-false': isCorrect = userAnswer === question.correctAnswer; break; case 'multiple-choice-multiple': if(Array.isArray(userAnswer) && Array.isArray(question.correctAnswer)) isCorrect = userAnswer.length === question.correctAnswer.length && userAnswer.every(val => question.correctAnswer.includes(val)); break; case 'true-false-table': if(Array.isArray(userAnswer) && Array.isArray(question.correctAnswer)) isCorrect = userAnswer.every((val, i) => val === question.correctAnswer[i]) && userAnswer.length === question.correctAnswer.length && !userAnswer.some(ans => ans === null); break; case 'drag-drop-match': if(Array.isArray(userAnswer) && Array.isArray(question.correctMapping)) isCorrect = userAnswer.every((val, idx) => val === question.correctMapping[idx]); break; } if (StudentElements.explanationArea.classList.contains('hidden') || (question.questionType === 'true-false-table' && !userAnswer.every(ans => ans !== null)) || question.questionType === 'drag-drop-match' && !userAnswer.every(ans => ans !== null) ) btn.classList.add('bg-gray-300'); else btn.classList.add(isCorrect ? 'bg-green-300' : 'bg-red-300'); } else btn.classList.add('bg-gray-300'); } else btn.classList.add('bg-white', 'hover:bg-gray-100'); if (appState.currentTest.markedForReview[index]) btn.classList.add('border-yellow-500', 'border-2'); else btn.classList.remove('border-yellow-500', 'border-2'); btn.onclick = () => { appState.currentTest.currentQuestionIndex = index; displayCurrentQuestion(); }; navigator.appendChild(btn); }); }
+        function updateQuestionNavigatorSelection() { updateQuestionNavigator(); }
+        function handleDragStart(e) { draggedItem = e.target; e.dataTransfer.setData('text/plain', e.target.id); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.target.classList.add('dragging'), 0); }
+        function handleDragOver(e) { e.preventDefault(); const targetZone = e.target.closest('.drop-zone-target'); if (targetZone) targetZone.classList.add('over'); }
+        function handleDragLeave(e) { const targetZone = e.target.closest('.drop-zone-target'); if (targetZone) targetZone.classList.remove('over'); }
+        function handleDrop(e) { e.preventDefault(); const targetZone = e.target.closest('.drop-zone-target'); if (!targetZone || !draggedItem) { if(draggedItem) draggedItem.classList.remove('dragging'); draggedItem = null; return; } targetZone.classList.remove('over'); const qIndex = appState.currentTest.currentQuestionIndex; const question = appState.currentTest.questions[qIndex]; const zoneIndex = parseInt(targetZone.dataset.zoneIndex); const draggedItemOriginalIndex = parseInt(draggedItem.dataset.originalIndex); const previouslyDroppedItemOriginalIndex = appState.currentTest.userAnswers[qIndex][zoneIndex]; if (previouslyDroppedItemOriginalIndex !== null && previouslyDroppedItemOriginalIndex !== undefined && previouslyDroppedItemOriginalIndex !== draggedItemOriginalIndex) { const prevSourceItem = document.getElementById(`drag-${qIndex}-${previouslyDroppedItemOriginalIndex}`); if (prevSourceItem) { prevSourceItem.style.opacity = '1'; prevSourceItem.draggable = true; } } targetZone.textContent = draggedItem.textContent; targetZone.classList.add('dropped', 'text-indigo-800', 'border-solid', 'bg-indigo-200'); targetZone.classList.remove('text-gray-500', 'border-dashed'); appState.currentTest.userAnswers[qIndex][zoneIndex] = draggedItemOriginalIndex; draggedItem.style.opacity = '0.3'; draggedItem.draggable = false; draggedItem.classList.remove('dragging'); const oldZoneIndexOfDraggedItem = appState.currentTest.userAnswers[qIndex].findIndex((itemIdx, idx) => itemIdx === draggedItemOriginalIndex && idx !== zoneIndex); if (oldZoneIndexOfDraggedItem !== -1) { appState.currentTest.userAnswers[qIndex][oldZoneIndexOfDraggedItem] = null; const oldDropZoneElement = document.getElementById(`dropzone-${qIndex}-${oldZoneIndexOfDraggedItem}`); if (oldDropZoneElement) { oldDropZoneElement.textContent = question.dropZoneLabels[oldZoneIndexOfDraggedItem]; oldDropZoneElement.classList.remove('dropped', 'bg-indigo-200', 'text-indigo-800', 'border-solid'); oldDropZoneElement.classList.add('text-gray-500', 'border-dashed'); } } draggedItem = null; updateQuestionNavigator(); }
+        function startTimer() { const timerDisplay = StudentElements.timer; if (appState.currentTest.timerInterval) clearInterval(appState.currentTest.timerInterval); let timeLeft = appState.currentTest.remainingTime !== undefined ? appState.currentTest.remainingTime : appState.currentTest.timeLimit; function updateDisplay() { const minutes = Math.floor(timeLeft / 60); const seconds = Math.floor(timeLeft % 60); timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`; } updateDisplay(); if (appState.currentTest.mode === 'Testing') { timerDisplay.classList.remove('hidden'); appState.currentTest.timerInterval = setInterval(() => { timeLeft--; appState.currentTest.remainingTime = timeLeft; updateDisplay(); if (timeLeft <= 0) { clearInterval(appState.currentTest.timerInterval); appState.currentTest.timerInterval = null; alert('Hết giờ làm bài!'); submitTest(); } }, 1000); } else { timerDisplay.textContent = "Không giới hạn"; } }
+        function confirmEndTest() { Views.confirmEndTestModal.classList.remove('hidden'); }
+        function closeConfirmEndTestModal() { Views.confirmEndTestModal.classList.add('hidden'); }
+        function submitTest() { closeConfirmEndTestModal(); if (appState.currentTest.timerInterval) { clearInterval(appState.currentTest.timerInterval); appState.currentTest.timerInterval = null; } let score = 0; try { appState.currentTest.questions.forEach((q, index) => { const userAnswer = appState.currentTest.userAnswers[index]; let isCorrect = false; switch (q.questionType) { case 'multiple-choice-single': case 'true-false': isCorrect = userAnswer === q.correctAnswer; break; case 'multiple-choice-multiple': if (Array.isArray(userAnswer) && Array.isArray(q.correctAnswer)) isCorrect = userAnswer.length === q.correctAnswer.length && userAnswer.every((val, i) => val === q.correctAnswer[i]); else isCorrect = false; break; case 'true-false-table': if (Array.isArray(userAnswer) && Array.isArray(q.correctAnswer) && q.statements && userAnswer.length === q.statements.length && q.correctAnswer.length === q.statements.length) { isCorrect = userAnswer.every((ans, i) => ans === q.correctAnswer[i] && ans !== null); } else isCorrect = false; break; case 'drag-drop-match': if (Array.isArray(userAnswer) && Array.isArray(q.correctMapping) && q.dropZoneLabels) { isCorrect = userAnswer.every((droppedItemOriginalIndex, dropZoneIdx) => droppedItemOriginalIndex !== null && droppedItemOriginalIndex === q.correctMapping[dropZoneIdx]); if (isCorrect && userAnswer.length !== q.dropZoneLabels.length) isCorrect = false; if (isCorrect && userAnswer.some(ans => ans === null)) isCorrect = false; } else isCorrect = false; break; } if (isCorrect) score++; }); } catch (error) { console.error("Lỗi tính điểm:", error); alert("Lỗi tính điểm. Kiểm tra console."); return; } const totalQ = appState.currentTest.questions.length; const percentage = totalQ > 0 ? (score / totalQ) * 100 : 0; StudentElements.scoreDisplay.textContent = `${percentage.toFixed(1)}%`; StudentElements.correctAnswersDisplay.textContent = score; StudentElements.totalQuestionsDisplay.textContent = totalQ; const passMsg = StudentElements.passFailMessage; if (percentage >= 70) { passMsg.textContent = "Chúc mừng! Bạn đã ĐẠT bài thi."; passMsg.className = "text-xl font-semibold mt-2 text-green-600"; } else { passMsg.textContent = "Rất tiếc! Bạn CHƯA ĐẠT bài thi."; passMsg.className = "text-xl font-semibold mt-2 text-red-600"; } try { displayReview(); } catch (error) { console.error("Lỗi hiển thị xem lại:", error); alert("Lỗi hiển thị xem lại. Kiểm tra console."); } showView(Views.student); Views.testTaking.classList.add('hidden'); Views.results.classList.remove('hidden'); }
+        function displayReview() { StudentElements.reviewArea.innerHTML = ''; try { appState.currentTest.questions.forEach((q, index) => { const div = document.createElement('div'); div.classList.add('p-4', 'border', 'rounded-md', 'mb-3'); const userAnswer = appState.currentTest.userAnswers[index]; let isCorrectOverall = false; let userAnswerText = 'Chưa trả lời'; let correctAnswerText = 'N/A'; switch (q.questionType) { case 'multiple-choice-single': case 'true-false': isCorrectOverall = userAnswer === q.correctAnswer; if (userAnswer !== null && q.options && q.options[userAnswer] !== undefined) userAnswerText = q.options[userAnswer]; else if (userAnswer !== null) userAnswerText = "Lựa chọn không hợp lệ"; if (q.options && q.options[q.correctAnswer] !== undefined) correctAnswerText = q.options[q.correctAnswer]; else correctAnswerText = "Đáp án không hợp lệ"; break; case 'multiple-choice-multiple': if (Array.isArray(userAnswer) && Array.isArray(q.correctAnswer) && q.options) { const sortedUserAnswer = [...userAnswer].sort((a,b)=>a-b); const sortedCorrectAnswer = [...q.correctAnswer].sort((a,b)=>a-b); isCorrectOverall = sortedUserAnswer.length === sortedCorrectAnswer.length && sortedUserAnswer.every((val, i) => val === sortedCorrectAnswer[i]); userAnswerText = sortedUserAnswer.map(i => q.options[i] || `Lựa chọn ${i} lỗi`).join(', ') || (userAnswer.length > 0 ? "Lựa chọn không hợp lệ" : 'Chưa trả lời'); correctAnswerText = sortedCorrectAnswer.map(i => q.options[i] || `Đáp án ${i} lỗi`).join(', '); } else { userAnswerText = (Array.isArray(userAnswer) && userAnswer.length > 0) ? userAnswer.map(i => `ID: ${i}`).join(', ') : 'Chưa trả lời'; correctAnswerText = Array.isArray(q.correctAnswer) ? q.correctAnswer.map(i => `ID: ${i}`).join(', ') : 'Không có đáp án đúng'; } break; case 'true-false-table': userAnswerText = '<table class="w-full text-sm mt-1 table-fixed">'; correctAnswerText = ''; let allStmtsCorrectInTable = true; if (Array.isArray(userAnswer) && Array.isArray(q.correctAnswer) && Array.isArray(q.statements) && userAnswer.length === q.statements.length) { q.statements.forEach((stmt, stmtIdx) => { const userAnsForStmt = userAnswer[stmtIdx]; const correctAnsForStmt = q.correctAnswer[stmtIdx]; const stmtCorrect = userAnsForStmt === correctAnsForStmt && userAnsForStmt !== null; if (!stmtCorrect && userAnsForStmt !== null) allStmtsCorrectInTable = false; else if (userAnsForStmt === null) allStmtsCorrectInTable = false; userAnswerText += `<tr class="border-b last:border-b-0 ${userAnsForStmt === null ? '' : (stmtCorrect ? 'bg-green-50' : 'bg-red-50')}"><td class="py-1 pr-2 truncate" title="${stmt}">${stmt}</td><td class="px-2 py-1 text-center w-20">${userAnsForStmt === 0 ? "Đúng" : (userAnsForStmt === 1 ? "Sai" : "-")}</td><td class="px-2 py-1 text-center w-20 font-semibold ${stmtCorrect && userAnsForStmt !== null ? 'text-green-700' : (userAnsForStmt !== null ? 'text-red-700' : '')}">${correctAnsForStmt === 0 ? "Đúng" : "Sai"}</td></tr>`; }); } else { userAnswerText += '<tr><td>Lỗi dữ liệu trả lời cho bảng.</td></tr>'; allStmtsCorrectInTable = false; } userAnswerText += '</table>'; isCorrectOverall = allStmtsCorrectInTable && (Array.isArray(userAnswer) && userAnswer.length === q.statements.length && !userAnswer.some(ans => ans === null)); break; case 'drag-drop-match': if (Array.isArray(userAnswer) && Array.isArray(q.correctMapping) && q.dropZoneLabels && q.draggableItems) { isCorrectOverall = userAnswer.every((droppedItemOriginalIndex, dropZoneIdx) => droppedItemOriginalIndex !== null && droppedItemOriginalIndex === q.correctMapping[dropZoneIdx]) && userAnswer.length === q.dropZoneLabels.length && !userAnswer.some(ans => ans === null); userAnswerText = '<ul class="list-disc list-inside">'; q.dropZoneLabels.forEach((label, dzIdx) => { const droppedItemOriginalIdx = userAnswer[dzIdx]; userAnswerText += `<li>${label}: ${droppedItemOriginalIndex !== null && droppedItemOriginalIndex !== undefined && q.draggableItems[droppedItemOriginalIndex] ? q.draggableItems[droppedItemOriginalIndex] : '<em>Trống</em>'}</li>`; }); userAnswerText += '</ul>'; correctAnswerText = '<ul class="list-disc list-inside">'; q.dropZoneLabels.forEach((label, dzIdx) => { const correctDraggableItemOriginalIndex = q.correctMapping[dzIdx]; correctAnswerText += `<li>${label}: ${q.draggableItems[correctDraggableItemOriginalIndex] || "Mục lỗi"}</li>`; }); correctAnswerText += '</ul>'; } else { userAnswerText = 'Dữ liệu trả lời không hợp lệ.'; correctAnswerText = 'Không thể hiển thị đáp án đúng.'; } break; } div.innerHTML = `<p class="font-semibold ${isCorrectOverall ? 'text-green-700' : 'text-red-700'}">Câu ${index + 1}: ${q.questionText || "Lỗi nội dung"}</p><div class="text-sm mt-1">${q.questionType === 'true-false-table' ? '<strong>Câu trả lời của bạn / Đáp án đúng (từng khẳng định):</strong>' + userAnswerText : 'Lựa chọn của bạn: <span class="font-medium">' + userAnswerText + '</span>'}</div>${q.questionType !== 'true-false-table' ? '<div class="text-sm">Đáp án đúng: <span class="font-medium">' + correctAnswerText + '</span></div>' : ''}${q.explanation ? `<p class="text-sm mt-1 text-gray-600"><em>Giải thích: ${q.explanation}</em></p>` : ''}`; div.classList.add(isCorrectOverall ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'); StudentElements.reviewArea.appendChild(div); }); } catch (error) { console.error("Lỗi trong displayReview loop:", error); StudentElements.reviewArea.innerHTML = '<p class="text-red-500">Lỗi hiển thị xem lại. Kiểm tra console.</p>'; } }
+        function backToTestSelection() { showView(Views.student); Views.results.classList.add('hidden'); showTestSelection(); }
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
